@@ -9,7 +9,7 @@
 <link rel="icon" href="abobora.png">
 <title>Caça aos Doces Gravatá</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Creepster&family=Fredoka:wght@400;500;600;700&family=Luckiest+Guy&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Creepster&family=Fredoka:wght@400;500;600;700&family=Luckiest+Guy&display=swap">
 <style>
 /* Layout: noite de Halloween — cabeçalho com contagem regressiva, mapa grande à esquerda, painel de casas e ações à direita (empilha no celular) */
 :root{
@@ -785,44 +785,130 @@ async function photoData(url){
   const k=Math.min(1,1400/Math.max(bmp.width,bmp.height)); const cv=document.createElement('canvas'); cv.width=Math.round(bmp.width*k); cv.height=Math.round(bmp.height*k);
   cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height); return {data:cv.toDataURL('image/jpeg',0.85), w:cv.width, h:cv.height};
 }
+/* ---------- book da festa ---------- */
+const BW=1240, BH=1754;
+const BK={ink:'#2a1446', pumpkin:'#ff7a00', deep:'#c24e00', gold:'#e8a800', paper1:'#fff8ec', paper2:'#f6e6cc'};
+function bkCanvas(){ const c=document.createElement('canvas'); c.width=BW; c.height=BH; return [c,c.getContext('2d')]; }
+function bkRR(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function bkBat(c,x,y,w,rot){ c.save(); c.translate(x,y); c.rotate(rot||0); c.scale(w/100,w/100); c.translate(-50,-25);
+  c.fillStyle='rgba(42,20,70,.85)'; c.fill(new Path2D('M50 15 56 9 58 16 72 5 100 6 92 16 86 31 76 25 68 35 58 29 50 42 42 29 32 35 24 25 14 31 8 16 0 6 28 5 42 16 44 9Z')); c.restore(); }
+function bkWeb(c,ox,oy,sx,sy,R){ c.save(); c.strokeStyle='rgba(42,20,70,.35)'; c.lineWidth=2;
+  const rays=7; for(let i=0;i<=rays;i++){ const a=i/rays*Math.PI/2; c.beginPath(); c.moveTo(ox,oy); c.lineTo(ox+sx*Math.cos(a)*R, oy+sy*Math.sin(a)*R); c.stroke(); }
+  for(let k=1;k<=5;k++){ const r=R*k/5.4; c.beginPath(); for(let i=0;i<=rays;i++){ const a=i/rays*Math.PI/2, rr=r*(i%2?0.93:1); const px=ox+sx*Math.cos(a)*rr, py=oy+sy*Math.sin(a)*rr; i?c.lineTo(px,py):c.moveTo(px,py);} c.stroke(); }
+  c.restore(); }
+function bkPaper(c,page,pk){
+  const g=c.createLinearGradient(0,0,0,BH); g.addColorStop(0,BK.paper1); g.addColorStop(1,BK.paper2); c.fillStyle=g; c.fillRect(0,0,BW,BH);
+  const v=c.createRadialGradient(BW/2,BH/2,BH*0.35,BW/2,BH/2,BH*0.75); v.addColorStop(0,'rgba(255,122,0,0)'); v.addColorStop(1,'rgba(194,78,0,.14)'); c.fillStyle=v; c.fillRect(0,0,BW,BH);
+  bkWeb(c,0,0,1,1,230); bkWeb(c,BW,BH,-1,-1,190);
+  bkBat(c,BW-150,70,90,-.15); bkBat(c,BW-260,120,55,.2); bkBat(c,BW-90,165,40,.1);
+  c.fillStyle=BK.ink; c.font='600 26px Fredoka, sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText('Caça aos Doces · Halloween Gravatá Country · 31/10/2026', BW/2, 64);
+  c.strokeStyle='rgba(255,122,0,.55)'; c.lineWidth=3; c.beginPath(); c.moveTo(300,84); c.lineTo(BW-300,84); c.stroke();
+  for(let i=0;i<7;i++){ const s=34+((i*13)%3)*8; c.globalAlpha=.9; c.drawImage(pk, 60+i*42, BH-60-s, s, s*pk.height/pk.width); } c.globalAlpha=1;
+  c.font='400 30px Creepster, fantasy'; c.fillStyle=BK.deep; c.textAlign='right'; c.fillText(String(page), BW-60, BH-46);
+}
+function bkWrap(c,text,maxW){ const words=String(text).split(/\s+/); const lines=[]; let cur='';
+  for(const w of words){ const t=cur?cur+' '+w:w; if(c.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; } if(cur) lines.push(cur); return lines; }
+function bkPolaroid(c,im,cx,cy,pw,ph,rot,cap1,cap2){
+  const pad=26, bottom=cap2?124:100, W=pw+pad*2, H=ph+pad+bottom;
+  c.save(); c.translate(cx,cy); c.rotate(rot*Math.PI/180);
+  c.shadowColor='rgba(42,20,70,.35)'; c.shadowBlur=28; c.shadowOffsetY=12; c.fillStyle='#fff'; c.fillRect(-W/2,-H/2,W,H); c.shadowColor='transparent';
+  const ar=pw/ph, iar=im.width/im.height; let sx=0,sy=0,sw=im.width,sh=im.height;
+  if(iar>ar){ sw=im.height*ar; sx=(im.width-sw)/2; } else { sh=im.width/ar; sy=(im.height-sh)/2; }
+  c.drawImage(im,sx,sy,sw,sh,-W/2+pad,-H/2+pad,pw,ph);
+  c.fillStyle='rgba(255,166,60,.55)'; c.save(); c.translate(0,-H/2+4); c.rotate(-.04); c.fillRect(-70,-18,140,36); c.restore();
+  c.textAlign='center'; c.fillStyle=BK.ink;
+  if(cap1){ let fs=46; c.font=`700 ${fs}px Caveat, cursive`; while(fs>34 && c.measureText(cap1).width>W-50){ fs-=2; c.font=`700 ${fs}px Caveat, cursive`; }
+    let ls=bkWrap(c,cap1,W-50); if(ls.length>2){ ls=ls.slice(0,2); ls[1]=ls[1].replace(/\s*\S*$/,'')+'…'; }
+    if(ls.length===1) c.fillText(ls[0],0,H/2-bottom+62); else { c.font=`700 ${Math.min(fs,34)}px Caveat, cursive`; c.fillText(ls[0],0,H/2-bottom+38); c.fillText(ls[1],0,H/2-bottom+70); } c.wrapped=ls.length>1; }
+  if(cap2){ c.font=`500 ${c.wrapped?26:30}px Caveat, cursive`; c.fillStyle='#6b4a8a'; c.fillText(cap2, 0, c.wrapped?H/2-14:H/2-26); } c.wrapped=false;
+  c.restore();
+}
+function bkCaps(f){ const a=f.legenda||'', b=f.apelido?`por ${f.apelido}`:''; return a ? [a,b] : (b ? [b,''] : ['','']); }
+function bkLayout(n){ const out=[]; let r=n; if(r===4){ return [2,2]; } while(r>0){ if(r===1){out.push(1);r=0;} else if(r===2){out.push(2);r=0;} else if(r===4){out.push(2,2);r=0;} else {out.push(3);r-=3;} } return out; }
+function bkPlace(c,ims,top){
+  const bot=BH-120, avail=bot-top, n=ims.length;
+  if(n===1){ const im=ims[0].im, land=im.width>=im.height; const pw=land?940:720, ph=Math.min(land?705:960, avail-190);
+    bkPolaroid(c,im,BW/2,top+avail/2,pw,ph,-1.5,...bkCaps(ims[0].f)); }
+  else if(n===2){ const h=(avail-40)/2; const ph=Math.min(h-150,560), pw=Math.round(ph*4/3);
+    bkPolaroid(c,ims[0].im,BW/2-90,top+h/2+10,pw,ph,-3,...bkCaps(ims[0].f));
+    bkPolaroid(c,ims[1].im,BW/2+90,top+h+40+h/2-10,pw,ph,2.5,...bkCaps(ims[1].f)); }
+  else { const h1=avail*0.54, h2=avail-h1; const ph=Math.min(h1-150,520), pw=Math.round(ph*4/3);
+    bkPolaroid(c,ims[0].im,BW/2,top+h1/2,pw,ph,-2,...bkCaps(ims[0].f));
+    const ph2=Math.min(h2-140,360), pw2=Math.min(470,Math.round(ph2*1.1));
+    bkPolaroid(c,ims[1].im,BW/2-285,top+h1+h2/2,pw2,ph2,3,...bkCaps(ims[1].f));
+    bkPolaroid(c,ims[2].im,BW/2+285,top+h1+h2/2+12,pw2,ph2,-2.5,...bkCaps(ims[2].f)); }
+}
+function bkChip(c,x,y,label,val,col){ c.font='600 30px Fredoka, sans-serif'; const t=`${label} ${val}`; const w=c.measureText(t).width+48;
+  bkRR(c,x,y,w,58,29); c.fillStyle=col; c.fill(); c.fillStyle='#fff'; c.textAlign='left'; c.fillText(t,x+24,y+40); return x+w+14; }
+function bkGroupHeader(c,title,sub,stats,crown){
+  c.textAlign='center'; c.lineJoin='round';
+  if(crown){ c.font='86px serif'; c.fillText('👑', BW/2, 205); }
+  c.font=`400 ${crown?96:112}px Creepster, fantasy`; c.lineWidth=10; c.strokeStyle='#4a1600'; const ty=crown?300:230;
+  c.strokeText(title,BW/2,ty); c.fillStyle=BK.pumpkin; c.fillText(title,BW/2,ty);
+  let y=ty+18;
+  if(sub){ c.font='600 44px Fredoka, sans-serif'; c.fillStyle=BK.ink; c.fillText(sub,BW/2,y+46); y+=60; }
+  if(stats){ c.font='600 30px Fredoka, sans-serif'; const parts=[['Decoração',f1(stats.aDeco),'#3f7d20'],['Guloseimas',f1(stats.aDoce),BK.deep],['Nota',f1(stats.total)+'/10','#4a146e']];
+    let tw=parts.reduce((s,p)=>s+c.measureText(`${p[0]} ${p[1]}`).width+62,0)-14; let x=(BW-tw)/2; y+=18; parts.forEach(p=>{ x=bkChip(c,x,y,p[0],p[1],p[2]); }); y+=58; }
+  return y+30;
+}
+async function bkLoad(f){ try{ const r=await fetch(fotoUrl(f.caminho)); const b=await r.blob(); const bmp=await createImageBitmap(b);
+  const k=Math.min(1,1300/Math.max(bmp.width,bmp.height)); const cv=document.createElement('canvas'); cv.width=Math.round(bmp.width*k); cv.height=Math.round(bmp.height*k); cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height); return cv; }catch(e){ return null; } }
+async function buildBook(progress){
+  await Promise.all(['400 100px Creepster','700 44px Caveat','500 30px Caveat','600 30px Fredoka','400 60px "Luckiest Guy"'].map(f=>document.fonts.load(f).catch(()=>{})));
+  const pk=await imgLoad('abobora.png'); const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4',compress:true});
+  const add=(cv,first)=>{ if(!first) doc.addPage(); doc.addImage(cv.toDataURL('image/jpeg',0.86),'JPEG',0,0,210,297,undefined,'FAST'); };
+  progress('Montando a capa…'); add(await poster(), true);
+  const rank=tally(), pos={}; rank.forEach((x,i)=>pos[x.lote]=i);
+  const list=[...fotos].reverse(); const loaded=[];
+  for(let i=0;i<list.length;i++){ progress(`Revelando foto ${i+1} de ${list.length}…`); const im=await bkLoad(list[i]); if(im) loaded.push({f:list[i],im}); }
+  const groups=[]; const geral=loaded.filter(x=>!x.f.lote||!has(x.f.lote)); if(geral.length) groups.push({title:'A FESTA',sub:'Fantasias, sustos e muitos doces',items:geral});
+  const byLot={}; loaded.filter(x=>x.f.lote&&has(x.f.lote)).forEach(x=>(byLot[x.f.lote]=byLot[x.f.lote]||[]).push(x));
+  Object.keys(byLot).map(Number).sort((a,b)=>(pos[a]??999)-(pos[b]??999)||a-b).forEach(n=>{ const l=state.lotes.find(x=>x.n===n); groups.push({title:`LOTE ${fmt(n)}`,sub:l&&l.f?l.f:'',stats:rank.find(r=>r.lote===n),crown:revealed&&pos[n]===0,items:byLot[n]}); });
+  let page=2;
+  for(const g of groups){ const chunks=bkLayout(g.items.length); let k=0;
+    chunks.forEach((n,ci)=>{ progress(`Diagramando a página ${page}…`); const [cv,c]=bkCanvas(); bkPaper(c,page,pk);
+      const top = ci===0 ? bkGroupHeader(c,g.title,g.sub,g.stats,g.crown) : 130;
+      bkPlace(c,g.items.slice(k,k+n),top); k+=n; add(cv); page++; }); }
+  if(rank.length){ progress('Preparando o pódio…'); const [cv,c]=bkCanvas(); bkPaper(c,page,pk);
+    c.save(); c.translate(BW/2,520); for(let i=0;i<24;i++){ c.rotate(Math.PI/12); c.fillStyle=i%2?'rgba(232,168,0,.10)':'rgba(255,122,0,.07)'; c.beginPath(); c.moveTo(0,0); c.lineTo(-90,-1100); c.lineTo(90,-1100); c.closePath(); c.fill(); } c.restore();
+    const w=rank[0], lw=state.lotes.find(x=>x.n===w.lote);
+    c.textAlign='center'; c.font='110px serif'; c.fillText('👑',BW/2,240);
+    c.font='400 76px Creepster, fantasy'; c.lineWidth=8; c.strokeStyle='#4a1600'; const t1=revealed?'A CASA MAIS LEGAL':'LÍDER DO PLACAR'; c.strokeText(t1,BW/2,330); c.fillStyle=BK.pumpkin; c.fillText(t1,BW/2,330);
+    if(revealed){ c.font='400 52px Creepster, fantasy'; c.fillStyle=BK.deep; c.fillText('DE VISITAR',BW/2,392); }
+    c.font='400 150px "Luckiest Guy", sans-serif'; c.fillStyle=BK.ink; c.fillText(`LOTE ${fmt(w.lote)}`,BW/2,560);
+    let y=600; if(lw&&lw.f){ c.font='600 48px Fredoka, sans-serif'; c.fillText(lw.f,BW/2,y+20); y+=50; }
+    c.font='600 30px Fredoka, sans-serif'; const parts=[['Decoração',f1(w.aDeco),'#3f7d20'],['Guloseimas',f1(w.aDoce),BK.deep],[`${w.n} voto${w.n>1?'s':''}`,'','#4a146e']];
+    let tw=parts.reduce((s,p)=>s+c.measureText(`${p[0]} ${p[1]}`).width+62,0)-14; let x=(BW-tw)/2; parts.forEach(p=>{ x=bkChip(c,x,y+30,p[0],p[1],p[2]); });
+    const best=(byLot[w.lote]||[])[0]; let yy=y+130;
+    if(best){ bkPolaroid(c,best.im,BW/2,yy+250,440,330,-2,...bkCaps(best.f)); yy+=540; } else yy+=20;
+    const medals=[['2º','#9aa3b5'],['3º','#c27a3a']];
+    rank.slice(1,3).forEach((r,i)=>{ const bx= i===0 ? BW/2-470 : BW/2+30, by=yy; bkRR(c,bx,by,440,120,22); c.fillStyle='#fff'; c.fill(); c.lineWidth=5; c.strokeStyle=medals[i][1]; c.stroke();
+      c.textAlign='left'; c.fillStyle=medals[i][1]; c.font='400 64px "Luckiest Guy", sans-serif'; c.fillText(medals[i][0],bx+24,by+84);
+      c.fillStyle=BK.ink; c.font='400 44px "Luckiest Guy", sans-serif'; c.fillText(`LOTE ${fmt(r.lote)}`,bx+130,by+62); c.font='600 26px Fredoka, sans-serif'; c.fillText(`nota ${f1(r.total)} · ${r.n} voto${r.n>1?'s':''}`,bx+130,by+100); });
+    yy+=170; const rest=rank.slice(3,15);
+    if(rest.length){ c.textAlign='left'; c.font='600 28px Fredoka, sans-serif'; c.fillStyle=BK.ink;
+      c.font='600 26px Fredoka, sans-serif'; rest.forEach((r,i)=>{ const col=i%3, row=Math.floor(i/3); const bx=150+col*330, by=yy+row*38; if(by>BH-130) return; c.fillText(`${i+4}º  Lote ${fmt(r.lote)} · ${f1(r.total)}`,bx,by); }); }
+    add(cv); page++; }
+  progress('Fechando o book…'); const [cv,c]=bkCanvas(); bkPaper(c,page,pk);
+  c.drawImage(pk,BW/2-170,250,340,340*pk.height/pk.width); c.textAlign='center';
+  c.font='400 96px Creepster, fantasy'; c.lineWidth=9; c.strokeStyle='#4a1600'; c.strokeText('OBRIGADO, VIZINHOS!',BW/2,720); c.fillStyle=BK.pumpkin; c.fillText('OBRIGADO, VIZINHOS!',BW/2,720);
+  const stats=[[state.lotes.length,'casas com doces'],[votes.filter(v=>has(v.lote)).length,'votos da criançada'],[loaded.length,'fotos no álbum']];
+  stats.forEach((s,i)=>{ const bx=150+i*330; bkRR(c,bx,800,280,200,30); c.fillStyle='#fff'; c.fill(); c.lineWidth=4; c.strokeStyle=BK.pumpkin; c.stroke();
+    c.fillStyle=BK.deep; c.font='400 92px "Luckiest Guy", sans-serif'; c.fillText(String(s[0]),bx+140,915); c.fillStyle=BK.ink; c.font='600 28px Fredoka, sans-serif'; c.fillText(s[1],bx+140,965); });
+  c.font='600 54px Caveat, cursive'; c.fillStyle=BK.ink;
+  ['Por cada doce, cada susto e cada sorriso,','o Halloween do Gravatá Country','foi um sucesso de arrepiar.','Ano que vem tem mais!'].forEach((l,i)=>c.fillText(l,BW/2,1130+i*72));
+  c.font='400 40px Creepster, fantasy'; c.fillStyle=BK.deep; c.fillText('GRAVATÁ COUNTRY · 31/10/2026',BW/2,1520);
+  add(cv);
+  return {blob:doc.output('blob'), fotos:loaded.length, pages:page};
+}
 $('bookBtn').onclick=async()=>{
   const btn=$('bookBtn'); btn.disabled=true;
   try{
-    say('fMsg','Montando a capa do book…','ok');
-    const {jsPDF}=window.jspdf; const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
-    const cover=await poster(); doc.addImage(cover.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297);
-    const list=[...fotos].reverse();
-    const bg=()=>{ doc.setFillColor(255,247,236); doc.rect(0,0,210,297,'F'); doc.setFillColor(42,20,70); doc.rect(0,0,210,16,'F');
-      doc.setTextColor(255,138,0); doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.text('Caça aos Doces · Halloween Gravatá Country · 31/10/2026',105,10.5,{align:'center'}); };
-    for(let i=0;i<list.length;i++){
-      if(i%2===0){ doc.addPage(); bg(); }
-      say('fMsg',`Colocando foto ${i+1} de ${list.length} no book…`,'ok');
-      const slotY = i%2===0 ? 24 : 158, slotH=122, slotW=186;
-      try{
-        const im=await photoData(fotoUrl(list[i].caminho));
-        const k=Math.min(slotW/im.w,(slotH-12)/im.h), w=im.w*k, h=im.h*k, x=12+(slotW-w)/2, y=slotY+(slotH-12-h)/2;
-        doc.setFillColor(255,122,0); doc.roundedRect(x-1.5,y-1.5,w+3,h+3,3,3,'F');
-        doc.addImage(im.data,'JPEG',x,y,w,h);
-        doc.setTextColor(42,20,70); doc.setFont('helvetica','normal'); doc.setFontSize(11);
-        doc.text(capOf(list[i])||'Festa', 105, slotY+slotH-2, {align:'center', maxWidth:180});
-      }catch(e){}
-    }
-    const r=tally();
-    if(r.length){
-      doc.addPage(); bg(); doc.setTextColor(194,78,0); doc.setFont('helvetica','bold'); doc.setFontSize(26);
-      doc.text(revealed?'Casa mais legal de visitar':'Placar da casa mais legal',105,40,{align:'center'});
-      doc.setFontSize(12); doc.setFont('helvetica','normal'); doc.setTextColor(90,70,110);
-      doc.text('Notas das crianças, de 1 a 5 abóboras: decoração + guloseimas (máximo 10)',105,50,{align:'center'});
-      r.slice(0,15).forEach((x,i)=>{ const y=68+i*14;
-        if(i<3){ doc.setFillColor(...[[255,210,74],[220,220,230],[230,170,110]][i]); doc.roundedRect(20,y-8,170,12,3,3,'F'); }
-        doc.setTextColor(42,20,70); doc.setFont('helvetica','bold'); doc.setFontSize(i<3?15:12);
-        doc.text(`${i+1}º   Lote ${fmt(x.lote)}`,26,y); doc.setFont('helvetica','normal');
-        doc.text(`Decoração ${f1(x.aDeco)}  ·  Guloseimas ${f1(x.aDoce)}  ·  ${x.n} voto${x.n>1?'s':''}`,82,y);
-        doc.setFont('helvetica','bold'); doc.text(f1(x.total),184,y,{align:'right'}); });
-    }
-    const blob=doc.output('blob'); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Book_Halloween_Gravata_Country.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
-    say('fMsg', `Book pronto: capa, ${list.length} foto(s)${r.length?' e o placar':''}! 📖`,'ok');
-  }catch(e){ say('fMsg','Não consegui montar o book agora. Tente de novo.','err'); }
+    const r=await buildBook(t=>say('fMsg',t,'ok'));
+    const url=URL.createObjectURL(r.blob); const a=document.createElement('a'); a.href=url; a.download='Book_Halloween_Gravata_Country.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000);
+    say('fMsg', `Book pronto: ${r.pages} páginas com ${r.fotos} foto(s)! 📖🎃`,'ok');
+  }catch(e){ console.error(e); say('fMsg','Não consegui montar o book agora. Tente de novo.','err'); }
   finally{ btn.disabled=false; }
 };
 
