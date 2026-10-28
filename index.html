@@ -189,6 +189,11 @@ footer b{color:var(--candy)}
 .lb img{max-width:100%;max-height:78vh;border-radius:12px;box-shadow:0 0 40px rgba(255,122,0,.35)}
 .lb p{margin:0;color:var(--ghost);font-weight:600;text-align:center}
 .lb .row2{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.joinf{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px}
+.joinf input{min-width:0;font:600 17px var(--f-body);background:#140924;border:2px solid var(--night-3);color:var(--ghost);border-radius:14px;padding:10px 12px}
+.joinf .btn{grid-column:1/-1;padding:12px;border-radius:14px}
+.joined{display:flex;align-items:center;gap:10px;background:#1d2a10;border:2px solid var(--slime);border-radius:14px;padding:10px 12px;margin-top:10px;font-weight:600}
+.joined img{width:36px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.bat{display:none}}
 </style>
 
@@ -235,6 +240,17 @@ footer b{color:var(--candy)}
     <aside>
       <div class="panel">
         <div class="big"><img src="abobora.png" alt=""><div><b id="total">0</b><br><span>casas com doces<br>esperando a criançada</span></div></div>
+      </div>
+
+      <div class="panel" id="joinPanel">
+        <h2>🏠 Minha casa vai participar!</h2>
+        <form class="joinf" id="joinForm" autocomplete="off">
+          <input id="joinLote" inputmode="numeric" placeholder="Lote" aria-label="Número do seu lote">
+          <input id="joinFam" maxlength="40" placeholder="Família (opcional)" aria-label="Nome da família (opcional)">
+          <button class="btn hot" type="submit">🍬 Vou distribuir doces!</button>
+        </form>
+        <div class="msg" id="joinMsg"></div>
+        <p class="small">Sua abóbora aparece no mapa na hora. Dica: tocar no seu lote no mapa já preenche o número.</p>
       </div>
 
       <div class="panel contest" id="contest">
@@ -371,10 +387,10 @@ async function fetchAll(table, cols){
 let firstLoad=true, fotos=[], fotosKey='';
 async function load(){
   try {
-    const [lotes, est, vts, fts] = await Promise.all([fetchAll('hw_lotes','n,criado_em'), sb.from('hw_estado').select('encerrado').eq('id',1).maybeSingle(), fetchAll('hw_votos','lote,deco,doce'), sb.from('hw_fotos').select('id,caminho,lote,apelido,legenda,criado_em').order('criado_em',{ascending:false}).limit(1000)]);
+    const [lotes, est, vts, fts] = await Promise.all([fetchAll('hw_lotes','n,criado_em,familia'), sb.from('hw_estado').select('encerrado').eq('id',1).maybeSingle(), fetchAll('hw_votos','lote,deco,doce'), sb.from('hw_fotos').select('id,caminho,lote,apelido,legenda,criado_em').order('criado_em',{ascending:false}).limit(1000)]);
     if (!fts.error) { const ids=fts.data.map(f=>f.id).join(','); if(ids!==fotosKey){ fotosKey=ids; fotos=fts.data; renderAlbum(); } }
     const before = sorted().join(',');
-    state = { lotes: lotes.filter(l=>LOTS[l.n]).map(l=>({n:l.n,t:l.criado_em})), atualizado:null };
+    state = { lotes: lotes.filter(l=>LOTS[l.n]).map(l=>({n:l.n,t:l.criado_em,f:l.familia||''})), atualizado:null };
     const was = revealed;
     revealed = !!(est.data && est.data.encerrado);
     votes = vts.filter(v=>LOTS[v.lote]&&v.deco>=1&&v.deco<=5&&v.doce>=1&&v.doce<=5);
@@ -449,7 +465,8 @@ $('map').addEventListener('click', e => {
   if (!n) return;
   if (canEdit && !readOnly && mode==='editar') { has(n) ? removeLot(n) : addLot(n); return; }
   if (has(n)) { burst(n); if (voteReady) { openVote(n); return; } }
-  tip(n, has(n) ? `🎃 Lote ${fmt(n)} tem doces!` : `Lote ${fmt(n)} · ainda sem doces`);
+  if (!has(n)) { $('joinLote').value = n; say('joinMsg', `Lote ${fmt(n)} selecionado. É o seu? Toque em "Vou distribuir doces!"`, 'ok'); tip(n, `Lote ${fmt(n)} · ainda sem doces. É o seu? 🏠`); return; }
+  tip(n, `🎃 Lote ${fmt(n)} tem doces!`);
 });
 
 /* ---------- edição ---------- */
@@ -599,12 +616,12 @@ function openVote(n){
   const s=sorted(); if(!s.length){ say('contestMsg','Ainda não há casas participando.','err'); return; }
   sheet.lote = n && has(n) ? n : null; sheet.deco=0; sheet.doce=0;
   $('vLote').innerHTML = (sheet.lote?'':'<option value="">Escolha o lote…</option>') + s.map(x=>`<option value="${x}"${x===sheet.lote?' selected':''}>Lote ${fmt(x)}</option>`).join('');
-  $('vTitle').textContent = sheet.lote ? `Lote ${fmt(sheet.lote)}` : 'Avaliar casa';
+  $('vTitle').textContent = sheet.lote ? loteNome(sheet.lote) : 'Avaliar casa';
   try{ $('vNome').value = sessionStorage.getItem('apelido')||''; }catch(e){}
   say('vMsg',''); paintRate(); $('overlay').hidden=false;
 }
 function closeVote(){ $('overlay').hidden=true; }
-$('vLote').onchange=e=>{ sheet.lote=+e.target.value||null; $('vTitle').textContent = sheet.lote?`Lote ${fmt(sheet.lote)}`:'Avaliar casa'; };
+$('vLote').onchange=e=>{ sheet.lote=+e.target.value||null; $('vTitle').textContent = sheet.lote?loteNome(sheet.lote):'Avaliar casa'; };
 $('vCancel').onclick=closeVote;
 $('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeVote(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('overlay').hidden) closeVote(); });
@@ -808,6 +825,27 @@ $('bookBtn').onclick=async()=>{
   }catch(e){ say('fMsg','Não consegui montar o book agora. Tente de novo.','err'); }
   finally{ btn.disabled=false; }
 };
+
+/* ---------- inscrição ---------- */
+function loteNome(n){ const l=state.lotes.find(x=>x.n===n); return `Lote ${fmt(n)}` + (l&&l.f ? ` · ${l.f}` : ''); }
+$('joinForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const n=parseInt(($('joinLote').value||'').replace(/\D/g,''),10), fam=$('joinFam').value.trim().slice(0,40);
+  if(!n){ say('joinMsg','Digite o número do seu lote.','err'); return; }
+  if(!LOTS[n]){ say('joinMsg',`Não achei o lote ${n} no mapa. Confere o número?`,'err'); return; }
+  if(has(n)){ say('joinMsg',`O lote ${fmt(n)} já está participando! 🎃`,'ok'); locate(n); return; }
+  const btn=e.submitter||$('joinForm').querySelector('button'); btn.disabled=true;
+  const {data,error}=await sb.rpc('hw_inscrever',{p_n:n,p_familia:fam||null,p_aparelho:deviceId()});
+  btn.disabled=false;
+  if(error){ say('joinMsg','Não consegui inscrever agora. Confira a internet e tente de novo.','err'); return; }
+  if(data==='limite'){ say('joinMsg','Este celular já inscreveu 2 casas. Para mais, fale com o organizador no grupo.','err'); return; }
+  if(data==='ja_inscrito'){ say('joinMsg',`O lote ${fmt(n)} já está participando! 🎃`,'ok'); load(); return; }
+  if(data!=='ok'){ say('joinMsg','Esse lote não existe no mapa.','err'); return; }
+  state.lotes.push({n,t:new Date().toISOString(),f:fam}); freshLot=n; render(); fillLoteSelect(); renderContest();
+  locate(n); burst(n); setTimeout(()=>burst(n),400);
+  $('joinLote').value=''; $('joinFam').value='';
+  $('joinMsg').className='msg'; $('joinMsg').innerHTML=`<div class="joined"><img src="abobora.png" alt="">Oba! Lote ${fmt(n)} no mapa. Capriche na decoração e prepare os doces, que a criançada vai dar nota! 👻</div>`;
+});
 
 /* ---------- início ---------- */
 $('hint').textContent='Toque numa abóbora para dar sua nota à casa.';
