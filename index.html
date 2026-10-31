@@ -636,11 +636,14 @@ $('voteForm').addEventListener('submit', async e=>{
   try{
     const {error}=await sb.from('hw_votos').insert({lote:sheet.lote, deco:sheet.deco, doce:sheet.doce, apelido:nome||null, aparelho:deviceId()});
     if(error) throw error;
+    let meus={}; try{ meus=JSON.parse(localStorage.getItem('hw_meus_votos')||'{}'); }catch(_){}
+    const antes=meus[sheet.lote]; if(antes){ const i=votes.findIndex(v=>v.lote===sheet.lote && v.deco===antes.deco && v.doce===antes.doce); if(i>=0) votes.splice(i,1); }
+    meus[sheet.lote]={deco:sheet.deco,doce:sheet.doce}; try{ localStorage.setItem('hw_meus_votos',JSON.stringify(meus)); }catch(_){}
     votes.push({lote:sheet.lote,deco:sheet.deco,doce:sheet.doce}); renderContest();
-    const n=sheet.lote; closeVote(); burst(n); locate(n); say('contestMsg',`Voto para o lote ${fmt(n)} registrado! Valeu${nome?', '+nome:''}! 🎃`,'ok');
+    const n=sheet.lote; closeVote(); burst(n); locate(n); say('contestMsg', antes ? `Voto para o lote ${fmt(n)} atualizado! Cada celular vale 1 voto por casa 🎃` : `Voto para o lote ${fmt(n)} registrado! Valeu${nome?', '+nome:''}! 🎃`,'ok');
   }catch(err){
     const m=(err&&err.message)||'';
-    say('vMsg', /Calma/.test(m) ? 'Calma! Espere alguns segundos para votar de novo nesta casa.' : /row-level|policy/i.test(m) ? 'A votação está encerrada ou essa casa saiu da lista.' : 'Não consegui registrar o voto. Confira a internet e tente de novo.','err');
+    say('vMsg', /Calma/.test(m) ? 'Seu voto nesta casa já foi registrado.' : /row-level|policy/i.test(m) ? 'A votação está encerrada ou essa casa saiu da lista.' : 'Não consegui registrar o voto. Confira a internet e tente de novo.','err');
   } finally { $('vSend').disabled=false; }
 });
 function tally(){
